@@ -20,15 +20,17 @@ public class SpriteSheetCreator {
     public SpriteSheetCreator(String inputPath, String outputPath) throws SpriteSheetCreatorException {
         mInput = new File(inputPath);
         mOutput = new File(outputPath);
+        mInput = mInput.getAbsoluteFile();
+        mOutput = mOutput.getAbsoluteFile();
         if (!mInput.exists()) {
-            throw new SpriteSheetCreatorException(String.format("Path \"%s\" does not exists.", mInput.getPath()));
+          throw new SpriteSheetCreatorException(String.format("Path \"%s\" does not exists.", mInput.getPath()));
+        } else if (!mInput.isDirectory()) {
+          throw new SpriteSheetCreatorException(String.format("Path \"%s\" is not a directory.", mInput.getPath()));
         }
-        if (!mInput.isDirectory()) {
-            throw new SpriteSheetCreatorException(String.format("Path \"%s\" is not a directory.", mInput.getPath()));
-        }
-        File parent = mOutput.getParentFile();
-        if (parent != null && !parent.exists()) {
-            throw new SpriteSheetCreatorException(String.format("Path \"%s\" does not exists.", parent.getPath()));
+        if (!mOutput.exists()) {
+          mOutput.mkdirs();
+        } else if (!mOutput.isDirectory()) {
+          throw new SpriteSheetCreatorException(String.format("Path \"%s\" is not a directory.", mOutput.getPath()));
         }
     }
 
@@ -128,13 +130,14 @@ public class SpriteSheetCreator {
         pack(images, bins, maxImageWidth[0], imageWidthSum[0], step[0]);
         int capacity = (bins.size() - 1) + 2;
         List<Item> items = new LinkedList<Item>();
+        String name = mInput.getName();
         int i = 0;
         for (Bin bin : bins) {
             Item item = new Item();
             if (bins.size() == 1) {
-                item.file = new File(mOutput.getPath() + ".png");
+                item.file = new File(mOutput, name + ".png");
             } else {
-                item.file = new File(String.format("%s_%d.png", mOutput.getPath(), i));
+                item.file = new File(mOutput, String.format("%s_%d.png", name, i));
             }
             item.data = bin.getData(item.file.getPath());
             capacity += item.data.getJson().length();
@@ -153,7 +156,7 @@ public class SpriteSheetCreator {
         json.append('}');
         FileWriter out = null;
         try {
-            out = new FileWriter(mOutput + ".json");
+            out = new FileWriter(new File(mOutput, name + ".json"));
             out.write(json.toString());
         } finally {
             if (out != null) out.close();
@@ -168,7 +171,7 @@ public class SpriteSheetCreator {
             SpriteSheetCreator spriteSheetCreator = new SpriteSheetCreator(args[0], args[1]);
             spriteSheetCreator.create();
         } catch (SpriteSheetCreatorException e) {
-            System.out.print(e.getMessage());
+            System.out.println(e.getMessage());
         }
     }
 }
